@@ -1,114 +1,210 @@
 import streamlit as st
 import time
-from timeit import default_timer as timer
 import playsound as ps
-import os
-                
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from tubes2 import data
+from savetimer import timersave
+
 def menu():
-    menu = ["Stopwatch", "Pomodoro", "Timer"]
+    menu = ["Pomodoro", "Timer", "Histori Belajar"]
     choice = st.sidebar.selectbox("Menu", menu)
-    if choice == "Stopwatch":
-        st.title("Stopwatch")
-        st.write("This is stopwatch")
     if choice == "Pomodoro":
         st.title("Pomodoro Timer")
-        st.write("This Is Pomodoro Timer")
-        pomodoro()
+        st.write("Break Time = 5 Minutes")
+        PomodoroForm()
     if choice == "Timer":
         st.title("Timer")
         timerForm()
+    if choice == "Histori Belajar":
+        st.title("Histori Belajar")
+        analyze()
 
+def timerForm():
+    col5, col6 = st.columns(2)
+    col1, col2, col3,col4 = st.columns(4)
+    with col1:
+        start = st.button("Start")
+    with col2:
+        st.button("Stop")
+    with col3:
+        reset = st.button("Reset")
+    with col4:
+        resume = st.button("Resume")
+    with col5:
+        dataTime = input()
+    with col6:
+        if start:
+            status = st.empty()           
+            timePrinted = st.empty()
+            status.success("Timer Running")
+            timerr(dataTime,timePrinted)
+            status.warning("Timer Stoped")        
+            status.warning("Time is up")              
+        if reset:
+            st.stop()  
+        if resume:
+            ganti = st.empty
+            global timersave
+            timerr(timersave, ganti)
+            
 def input():
     try:
         listTime = [0,0,0]
-        hours = int(st.text_input("Hours", 00))
-        minutes = int(st.text_input("Minutes", 00))
-        seconds = int(st.text_input("Seconds", 00))
-        listTime[0] = hours
-        listTime[1] = minutes
-        listTime[2] = seconds
-        if listTime[1] > 60 and listTime[2] > 60:
-            st.write("Angka Tidak Valid")
-            listTime[1] = 59
-            listTime[2] = 59
+        listTime[0] = int(st.text_input("Hours", 00))
+        listTime[1] = int(st.text_input("Minutes", 00))
+        listTime[2] = int(st.text_input("Seconds", 00))
+        if listTime[1] >= 60 or listTime[2] >= 60:
+            st.warning("Angka Tidak Valid")
+            if listTime[1] >= 60:
+                listTime[1] = 59
+                listTime[2] = 59   
+            else:
+                listTime[2] = 59        
         elif listTime[1] < 0 or listTime[2] < 0:
-            listTime[1] = 0
-            listTime[2] = 0
-        
+            st.warning("Angka Tidak Valid")
+            if listTime[1] < 0:
+                listTime[1] = 0  
+                listTime[2] = 0
+            else: 
+                listTime[2] = 0     
     except ValueError:
             st.write("Invalid Value")
-    return listTime
+    return listTime  
 
-def timerForm():
-    col1, col2 = st.columns(2)
-    col3, col4, col5 = st.columns(3)
-    with col3:
-        start = st.button("Start")
-        state = "Start"
-    with col4:
-        global stop
-        stop = st.button("Stop")
-    with col5:
-        ulangi = st.button("Ulangi Timer")
-    with col1:
-        dataTime = input()
-        pauseTime = int(st.text_input("Pause time", 10))
-    with col2:
-        
-        if start and state == "Start":
-            data1 = timerr(dataTime)
-        if stop and state == "Start":
-            st.write(data1)
-        if ulangi and state == "Start" and state == "Pause":
-            state = "Start"
-
-    
-def timerr(parameter):
+def timerr(parameter,timePrinted):
     hours = parameter[0]
     minutes = parameter[1]
-    seconds = parameter[2]
-    timePrinted = st.empty()
-    while True :
-        if seconds == 0:
-            if minutes == 0:
-                if hours == 0:
-                    st.success("Time is Up!")
-                    ps.playsound("soundtimer.mp3")
-                    break
-                else:
-                    hours -=1
-                    minutes = 60
-            else: 
-                minutes -= 1
-                seconds = 59
-        else:
-            seconds -= 1
-        timePrinted.title(f"{hours}:{minutes}:{seconds}")
-        time.sleep(1)
-        data1 = []
-        data1.append(hours)
-        data1.append(minutes)
-        data1.append(seconds)
-        return data1
+    seconds = parameter[2]  
+    try:
+        while True :
+            if seconds == 0:
+                if minutes == 0:
+                    if hours == 0:                       
+                        break
+                    else:
+                        hours -=1
+                        minutes = 60
+                else: 
+                    minutes -= 1
+                    seconds = 59
+            else:
+                seconds -= 1
+            timePrinted.title(f"{hours}:{minutes}:{seconds}")
+            time.sleep(1)
+    except:        
+        global timersave
+        timersave =  [hours , minutes, seconds]
+ 
+    # ps.playsound("soundtimer.mp3")
 
-def pomodoro():
-    start = st.button("Start")
-    st.write("Break Time = 5 Minute")
-    listkosong = [0,0,0]
-    time = [1,15,25]
-    choice = st.selectbox("Pilih Waktu Fokus (menit)", time)
-    if choice == 1:
-        listkosong[1] = time[0]
+def PomodoroForm():
+    col1, col2 = st.columns(2)
+    col3,col4 = st.columns(2)
+    with col3:
+        start = st.button("Start")   
+        with col1:
+            try: 
+                Time = st.select_slider('Focus Time',options=[10, 15, 20, 25, 30])
+                breakTime = [0,5,0]
+                focusTime = [0,Time,0]
+                session = int(st.text_input("Session", 1))
+            except ValueError:
+                st.write("Invalid Value")
+    with col2:
         if start:
-            timerr(listkosong)
-    if choice == 15:
-        listkosong[1] = time[1]
-        if start:
-            timerr(listkosong)
-    if choice == 25:
-        listkosong[1] = time[2]
-        if start:
-            timerr(listkosong)
+            status = st.empty()
+            timePrinted = st.empty()
+            Pomodoro(session, breakTime, focusTime, timePrinted, status)
+            savepomodoro(session, focusTime[1])      
+
+def Pomodoro(session, breaktime, focustime, timePrinted, status):
+    for i in range(session):
+        status.warning("Focus Time")
+        timerr(focustime, timePrinted)
+        time.sleep(3)
+        status.success("Break Time")
+        timerr(breaktime,timePrinted)
+        time.sleep(3)
+    status.success("Selamat Anda Telah Menuntaskan Belajar")
+    st.balloons()
+
+def savepomodoro(session, time):
+    global data
+    nomor = len(data[1])+1    
+    data[0].append(nomor)
+    data[1].append(time)
+    data[2].append(session)
+    data[3].append(session * time)
+
+def analyze():
+    col1, col2 = st.columns(2)
+    col3, col4, col5,col6 = st.columns(4)
+    global data
+    table = pd.DataFrame({
+        "Belajar Ke-" : data[0],
+        "Focus Time" : data[1] ,
+        "Session" : data[2],
+        "Waktu Belajar" : data[3] 
+    })
+
+    def tampilanGrapik( data2,  tanda, warna, vertical):
+        fig = plt.figure(figsize=(10 , 5))
+        plt.plot(data[0], data[data2], '.-',label=tanda, color = warna)
+        plt.xlabel("Belajar Ke-")
+        plt.ylabel(vertical)
+        plt.title(tanda)
+        plt.legend()
+        return st.pyplot(fig)
+       
+    def tigaData():
+        gambar = plt.figure(figsize=(10,5))
+        w = 0.2
+        belajar = data[0]
+        focusTime = data[1]
+        session = data[2]
+        waktuBelajar = data[3]
         
+        bar1 = np.arange(len(belajar),dtype = int)
+        bar2 = [i+w for i in bar1]
+        bar3 = [i+w for i in bar2]
+        
+        plt.bar(bar1 ,focusTime, w , color = "purple", label = "Focus Time")
+        plt.bar(bar2 , session , w , color = "blue", label = "Session")
+        plt.bar(bar3, waktuBelajar, w, color = "red", label = "Waktu belajar")
+
+        plt.xticks(bar1+w, belajar)
+        plt.xlabel("belajar ke-")
+        plt.ylabel("Menit/Session")
+        plt.title("Grapik Session, Focus Time, Waktu Belajar")
+        plt.legend()
+
+        return st.pyplot(gambar)
+        
+    with col3:
+        tmblBelajar = st.button("Waktu Belajar")
+    with col4:
+        tmblSession = st.button("Session")
+    with col5:
+        tmblFocus = st.button("Focus")
+    with col6:
+        tiga = st.button("Tampilkan ke 3 Data")
+    with col1:
+        kosong = st.empty()
+        if tmblBelajar:
+            kosong.write("Grapik Waktu Belajar (session x belajar)")
+            c = tampilanGrapik(3,"Waktu Belajar", "red","Menit")
+        elif tmblSession:
+            kosong.write("Grapik Session")
+            d = tampilanGrapik(2,"Session", "blue","Session")
+        elif tmblFocus:
+            kosong.write("Grapik Focus Time")
+            f = tampilanGrapik(1, "Focus Time" , "purple", "Menit" )
+        elif tiga:
+            kosong.write("Grapik Tiga Data")
+            grapik = tigaData()
+        st.write("Tabel Histori Belajar")
+        st.write(table)
 
 menu()
